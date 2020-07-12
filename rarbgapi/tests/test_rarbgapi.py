@@ -28,24 +28,16 @@ def expected_headers(client):
 
 
 @pytest.fixture
-def expected_query_strings():
-    return {
-        'app_id': DUMMY_APP_ID,
-        'token': DUMMY_TOKEN,
-    }
-
-
-@pytest.fixture
 def empty_response():
     return {
         'torrent_results': [],
     }
 
 
-QUERY_STRING_VALUE = 'qs_value'
+QUERY_STRING_VALUE = 'json'
 SUPPORTED_ARGS = [
-        'search_string', 'sort', 'limit', 'category', 'format_', 'search_imdb',
-        'search_tvdb', 'search_themoviedb',
+        'format_', 'sort', 'limit', 'category',
+        'search_string', 'search_tvdb', 'search_themoviedb', 'search_imdb',
     ]
 @pytest.mark.parametrize(
     'mode', ['list', 'search']
@@ -55,16 +47,17 @@ SUPPORTED_ARGS = [
 )
 def test_supported_arg(
         httpserver, client,
-        expected_headers, expected_query_strings, empty_response,
+        expected_headers, empty_response,
         mode, supported_arg):
-    expected_query_strings['mode'] = mode
     key = input_arg_to_query_string_key(supported_arg)
-    expected_query_strings[key] = QUERY_STRING_VALUE
-
     httpserver.expect_request(
         "/",
         headers=expected_headers,
-        query_string=expected_query_strings,
+        query_string={
+            'app_id': DUMMY_APP_ID, 'token': DUMMY_TOKEN,
+            'mode': mode, key: QUERY_STRING_VALUE,
+        },
+        handler_type=pytest_httpserver.httpserver.HandlerType.PERMANENT,
     ).respond_with_json(empty_response)
 
     func = getattr(client, mode)
